@@ -263,8 +263,16 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		mem_deref(mb2);
 	}
 	else {
-		if (lostcalc(s, hdr->seq) > 0)
+		int n;
+
+		n = lostcalc(s, hdr->seq);
+		if (n > 0) {
+			re_printf("* %d rtp packets lost\n", n);
+
+			s->n_lost += n;
+
 			handle_rtp(s, hdr, NULL);
+		}
 
 		handle_rtp(s, hdr, mb);
 	}
@@ -700,6 +708,7 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 	err |= re_hprintf(pf, " local: %J, remote: %J/%J\n",
 			  sdp_media_laddr(s->sdp),
 			  sdp_media_raddr(s->sdp), &rrtcp);
+	err |= re_hprintf(pf, " n_lost:%llu\n", s->n_lost);
 
 	err |= rtp_debug(pf, s->rtp);
 	err |= jbuf_debug(pf, s->jbuf);
